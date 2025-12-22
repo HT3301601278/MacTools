@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct WindowResizerView: View {
+    @AppStorage("windowResizerEnabled") private var windowResizerEnabled = true
     @StateObject private var resizer = WindowResizer()
     @State private var hasAccessibility = AXIsProcessTrusted()
     
@@ -8,6 +9,11 @@ struct WindowResizerView: View {
 
     var body: some View {
         Form {
+            Section {
+                Toggle("启用窗口调整功能", isOn: $windowResizerEnabled)
+                    .disabled(!hasAccessibility)
+            }
+            
             Section("目标应用") {
                 HStack {
                     Picker("选择应用", selection: $resizer.selectedApp) {
@@ -31,7 +37,7 @@ struct WindowResizerView: View {
                             resizer.resize(to: size)
                         }
                         .buttonStyle(.bordered)
-                        .disabled(!hasAccessibility)
+                        .disabled(!hasAccessibility || !windowResizerEnabled)
                     }
                 }
             }
@@ -48,7 +54,7 @@ struct WindowResizerView: View {
                     Button("应用") {
                         resizer.resizeCustom()
                     }
-                    .disabled(!hasAccessibility)
+                    .disabled(!hasAccessibility || !windowResizerEnabled)
                 }
             }
             

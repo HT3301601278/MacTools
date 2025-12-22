@@ -2,6 +2,7 @@ import SwiftUI
 import Carbon.HIToolbox
 
 struct WindowPinView: View {
+    @AppStorage("windowPinEnabled") private var windowPinEnabled = true
     @State private var isRecording = false
     @State private var currentShortcut: String = ""
     @State private var modifiers: Int = 0
@@ -10,6 +11,14 @@ struct WindowPinView: View {
     
     var body: some View {
         Form {
+            Section {
+                Toggle("启用窗口置顶功能", isOn: $windowPinEnabled)
+                    .disabled(!hasAccessibility)
+            } footer: {
+                Text("关闭后快捷键将不生效")
+                    .foregroundStyle(.secondary)
+            }
+            
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("快捷键")
@@ -45,13 +54,6 @@ struct WindowPinView: View {
             } footer: {
                 Text("按下快捷键可将当前窗口置顶/取消置顶")
                     .foregroundStyle(.secondary)
-            }
-            
-            Section {
-                Button("立即置顶/取消置顶当前窗口") {
-                    WindowPinManager.shared.togglePinFrontWindow()
-                }
-                .disabled(!hasAccessibility)
             }
         }
         .formStyle(.grouped)
