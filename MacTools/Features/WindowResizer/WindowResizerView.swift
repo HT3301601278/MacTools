@@ -5,9 +5,9 @@ struct WindowResizerView: View {
     @State private var hasAccessibility = AXIsProcessTrusted()
     @State private var isRecordingShortcut = false
     @State private var shortcutDisplay = WindowResizerManager.shared.shortcutDescription
+    @State private var showAddSheet = false
+    @State private var editingSize: WindowSize?
     
-    private let columns = [GridItem(.adaptive(minimum: 100))]
-
     var body: some View {
         Form {
             Section {
@@ -48,20 +48,40 @@ struct WindowResizerView: View {
                 }
             }
             
-            Section("预设尺寸") {
-                LazyVGrid(columns: columns, spacing: 8) {
-                    ForEach(presetSizes) { size in
-                        Text(size.label)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.secondary.opacity(0.2))
-                            .cornerRadius(4)
+            Section {
+                List {
+                    ForEach(PresetSizeStore.shared.sizes) { size in
+                        SizeRowView(size: size) {
+                            editingSize = size
+                        }
                     }
+                    .onMove { PresetSizeStore.shared.move(from: $0, to: $1) }
+                    .onDelete { PresetSizeStore.shared.delete(at: $0) }
+                }
+                .listStyle(.plain)
+                .frame(minHeight: 200)
+            } header: {
+                HStack {
+                    Text("预设尺寸")
+                    Spacer()
+                    Button {
+                        showAddSheet = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(.blue)
+                            .imageScale(.large)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
         .formStyle(.grouped)
+        .sheet(isPresented: $showAddSheet) {
+            SizeEditSheet(mode: .add)
+        }
+        .sheet(item: $editingSize) { size in
+            SizeEditSheet(mode: .edit(size))
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             hasAccessibility = AXIsProcessTrusted()
             shortcutDisplay = WindowResizerManager.shared.shortcutDescription
@@ -98,5 +118,129 @@ struct WindowResizerView: View {
             
             return event
         }
+    }
+}
+
+struct SizeRowView: View {
+    let size: WindowSize
+    let onEdit: () -> Void
+    
+    @State private var isHovering = false
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.tertiary)
+            
+            Text(size.label)
+                .font(.system(.body, design: .monospaced))
+                .fontWeight(.medium)
+            
+            Spacer()
+            
+            if isHovering {
+                Button {
+                    onEdit()
+                } label: {
+                    Image(systemName: "pencil.circle.fill")
+                        .foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
+    }
+}
+
+enum SizeEditMode: Identifiable {
+    case add
+    case edit(WindowSize)
+    
+    var id: String {
+        switch self {
+        case .add: return "add"
+        case .edit(let size): return size.id.uuidString
+        }
+    }
+}
+
+struct SizeEditSheet: View {
+    let mode: SizeEditMode
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var width = ""
+    @State private var height = ""
+    
+    private var title: String {
+        switch mode {
+        case .add: return "新增尺寸"
+        case .edit: return "编辑尺寸"
+        }
+    }
+    
+    private var isValid: Bool {
+        guard let w = Int(width), let h = Int(height) else { return false }
+        return w > 0 && h > 0
+    }
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(title)
+                .font(.headline)
+            
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("宽度")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("1920", text: $width)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 100)
+                }
+                
+                Text("×")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("高度")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("1080", text: $height)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 100)
+                }
+            }
+            
+            HStack(spacing: 12) {
+                Button("取消") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                
+                Button("确定") { save() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!isValid)
+            }
+        }
+        .padding(24)
+        .frame(minWidth: 280)
+        .onAppear {
+            if case .edit(let size) = mode {
+                width = String(size.width)
+                height = String(size.height)
+            }
+        }
+    }
+    
+    private func save() {
+        guard let w = Int(width), let h = Int(height) else { return }
+        switch mode {
+        case .add:
+            PresetSizeStore.shared.add(width: w, height: h)
+        case .edit(let size):
+            PresetSizeStore.shared.update(id: size.id, width: w, height: h)
+        }
+        dismiss()
     }
 }
