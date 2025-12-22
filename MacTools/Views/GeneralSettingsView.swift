@@ -1,9 +1,11 @@
 import SwiftUI
 import ServiceManagement
+import ScreenCaptureKit
 
 struct GeneralSettingsView: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var hasAccessibility = AXIsProcessTrusted()
+    @State private var hasScreenCapture = false
 
     var body: some View {
         Form {
@@ -35,6 +37,27 @@ struct GeneralSettingsView: View {
                         .buttonStyle(.link)
                     }
                 }
+                
+                HStack {
+                    Text("屏幕录制权限")
+                    Spacer()
+                    if hasScreenCapture {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                    } else {
+                        Button("去授权") {
+                            Task {
+                                do {
+                                    _ = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
+                                    hasScreenCapture = true
+                                } catch {
+                                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+                                }
+                            }
+                        }
+                        .buttonStyle(.link)
+                    }
+                }
             }
             
             Section("启动") {
@@ -55,6 +78,21 @@ struct GeneralSettingsView: View {
         .formStyle(.grouped)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             hasAccessibility = AXIsProcessTrusted()
+            checkScreenCapturePermission()
+        }
+        .onAppear {
+            checkScreenCapturePermission()
+        }
+    }
+    
+    private func checkScreenCapturePermission() {
+        Task {
+            do {
+                _ = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
+                hasScreenCapture = true
+            } catch {
+                hasScreenCapture = false
+            }
         }
     }
 }
