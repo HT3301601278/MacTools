@@ -7,7 +7,6 @@ final class WindowResizerManager: FeatureManager {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     
-    // 快捷键配置
     var keyCode: UInt16 {
         didSet { UserDefaults.standard.set(Int(keyCode), forKey: "windowResizerKeyCode") }
     }
@@ -20,7 +19,6 @@ final class WindowResizerManager: FeatureManager {
         let storedModifiers = UserDefaults.standard.integer(forKey: "windowResizerModifiers")
         modifiers = storedModifiers != 0 ? CGEventFlags(rawValue: UInt64(storedModifiers)) : [.maskCommand, .maskShift]
         
-        // 默认快捷键: ⌘⇧W
         if keyCode == 0 {
             keyCode = UInt16(kVK_ANSI_W)
         }
@@ -61,8 +59,6 @@ final class WindowResizerManager: FeatureManager {
         runLoopSource = nil
     }
     
-
-    
     private func handleEvent(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         guard type == .keyDown else { return Unmanaged.passRetained(event) }
         guard UserDefaults.standard.bool(forKey: "windowResizerEnabled") else {
@@ -72,7 +68,6 @@ final class WindowResizerManager: FeatureManager {
         let eventKeyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
         let eventModifiers = event.flags
         
-        // 检查修饰键匹配
         let requiredMods: CGEventFlags = [.maskCommand, .maskShift, .maskControl, .maskAlternate]
         let currentMods = eventModifiers.intersection(requiredMods)
         let targetMods = modifiers.intersection(requiredMods)
@@ -81,7 +76,7 @@ final class WindowResizerManager: FeatureManager {
             DispatchQueue.main.async {
                 WindowPickerPanel.shared.show()
             }
-            return nil // 消费掉这个事件
+            return nil
         }
         
         return Unmanaged.passRetained(event)
