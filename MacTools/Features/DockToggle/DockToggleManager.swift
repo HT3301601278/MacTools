@@ -57,6 +57,12 @@ final class DockToggleManager {
         guard AXUIElementCopyElementAtPosition(systemWide, Float(location.x), Float(flippedY), &elementRef) == .success,
               let element = elementRef else { return nil }
         
+        var pidValue: pid_t = 0
+        guard AXUIElementGetPid(element, &pidValue) == .success else { return nil }
+        
+        let dockApps = NSWorkspace.shared.runningApplications.filter { $0.bundleIdentifier == "com.apple.dock" }
+        guard let dockApp = dockApps.first, dockApp.processIdentifier == pidValue else { return nil }
+        
         var current: AXUIElement? = element
         while let elem = current {
             if let bundleId = extractBundleId(from: elem) {
