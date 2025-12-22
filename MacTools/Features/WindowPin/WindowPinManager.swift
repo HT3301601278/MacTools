@@ -55,6 +55,7 @@ final class WindowPinManager {
     }
     
     func togglePinFrontWindow() {
+        guard UserDefaults.standard.bool(forKey: "windowPinEnabled") else { return }
         guard AXIsProcessTrusted() else { return }
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
         

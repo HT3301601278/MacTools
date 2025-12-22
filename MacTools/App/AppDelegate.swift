@@ -4,7 +4,11 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        UserDefaults.standard.register(defaults: ["dockToggleEnabled": true])
+        UserDefaults.standard.register(defaults: [
+            "dockToggleEnabled": true,
+            "windowResizerEnabled": true,
+            "windowPinEnabled": true
+        ])
         
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
