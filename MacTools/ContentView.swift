@@ -26,6 +26,7 @@ struct ContentView: View {
                     .tag(item)
             }
             .navigationSplitViewColumnWidth(min: 120, ideal: 140)
+            .toolbar(removing: .sidebarToggle)
         } detail: {
             switch selection {
             case .general:
