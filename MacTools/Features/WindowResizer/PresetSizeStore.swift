@@ -43,6 +43,10 @@ final class PresetSizeStore {
         }
     }
     
+    func resetToDefault() {
+        sizes = Self.defaultSizes
+    }
+    
     private static let defaultSizes: [WindowSize] = [
         WindowSize(width: 640, height: 360),
         WindowSize(width: 800, height: 500),
