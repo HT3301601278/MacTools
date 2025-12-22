@@ -6,6 +6,7 @@ struct GeneralSettingsView: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var hasAccessibility = AXIsProcessTrusted()
     @State private var hasScreenCapture = false
+    @AppStorage("showInDock") private var showInDock = false
 
     var body: some View {
         Form {
@@ -72,6 +73,11 @@ struct GeneralSettingsView: View {
                         } catch {
                             launchAtLogin = SMAppService.mainApp.status == .enabled
                         }
+                    }
+                
+                Toggle("在程序坞显示图标", isOn: $showInDock)
+                    .onChange(of: showInDock) { _, newValue in
+                        NSApp.setActivationPolicy(newValue ? .regular : .accessory)
                     }
             }
         }
