@@ -4,7 +4,6 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case general = "通用"
     case dockToggle = "Dock"
     case windowResizer = "窗口"
-    case windowPin = "置顶"
     
     var id: String { rawValue }
     
@@ -13,7 +12,6 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .general: return "gearshape"
         case .dockToggle: return "dock.rectangle"
         case .windowResizer: return "macwindow"
-        case .windowPin: return "pin"
         }
     }
 }
@@ -36,8 +34,6 @@ struct ContentView: View {
                 DockToggleView()
             case .windowResizer:
                 WindowResizerView()
-            case .windowPin:
-                WindowPinView()
             }
         }
         .frame(minWidth: 500, minHeight: 350)
