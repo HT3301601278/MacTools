@@ -1,24 +1,23 @@
 import AppKit
 import ApplicationServices
 
-final class DockToggleManager {
+final class DockToggleManager: FeatureManager {
     
     static let shared = DockToggleManager()
-    private var globalMonitor: Any?
+    private var eventMonitor: GlobalEventMonitor?
     
     private init() {}
     
     func start() {
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+        eventMonitor = GlobalEventMonitor(mask: .leftMouseDown) { [weak self] event in
             self?.handleGlobalClick(event)
         }
+        eventMonitor?.start()
     }
     
     func stop() {
-        if let monitor = globalMonitor {
-            NSEvent.removeMonitor(monitor)
-            globalMonitor = nil
-        }
+        eventMonitor?.stop()
+        eventMonitor = nil
     }
     
     private func handleGlobalClick(_ event: NSEvent) {
