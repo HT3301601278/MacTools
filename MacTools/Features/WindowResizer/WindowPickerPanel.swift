@@ -1,15 +1,19 @@
 import AppKit
 import ApplicationServices
+import ScreenCaptureKit
+import SwiftUI
 
 struct WindowInfo: Identifiable {
     let id: CGWindowID
     let name: String
     let ownerName: String
     let bounds: CGRect
-    let appIcon: NSImage?
+    var thumbnail: NSImage?
     let pid: pid_t
+    let scWindow: SCWindow?
 }
 
+@MainActor
 final class WindowPickerPanel {
     static let shared = WindowPickerPanel()
     
@@ -21,35 +25,37 @@ final class WindowPickerPanel {
     func show() {
         close()
         
-        let windows = fetchWindows()
-        guard !windows.isEmpty else { return }
-        
-        let view = WindowPickerView(windows: windows) { selectedWindow in
-            self.close()
-            SizePickerPanel.shared.show(for: selectedWindow)
-        } onCancel: {
-            self.close()
+        Task {
+            let windows = await fetchWindows()
+            guard !windows.isEmpty else { return }
+            
+            let view = WindowPickerView(windows: windows) { selectedWindow in
+                self.close()
+                SizePickerPanel.shared.show(for: selectedWindow)
+            } onCancel: {
+                self.close()
+            }
+            
+            let hostingView = NSHostingView(rootView: view)
+            self.hostingView = hostingView
+            
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
+                styleMask: [.titled, .closable, .fullSizeContentView],
+                backing: .buffered,
+                defer: false
+            )
+            panel.title = "选择窗口"
+            panel.titlebarAppearsTransparent = true
+            panel.isMovableByWindowBackground = true
+            panel.level = .floating
+            panel.contentView = hostingView
+            panel.center()
+            panel.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            
+            self.panel = panel
         }
-        
-        let hostingView = NSHostingView(rootView: view)
-        self.hostingView = hostingView
-        
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
-            styleMask: [.titled, .closable, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-        panel.title = "选择窗口"
-        panel.titlebarAppearsTransparent = true
-        panel.isMovableByWindowBackground = true
-        panel.level = .floating
-        panel.contentView = hostingView
-        panel.center()
-        panel.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        
-        self.panel = panel
     }
     
     func close() {
@@ -58,59 +64,79 @@ final class WindowPickerPanel {
         hostingView = nil
     }
     
-    private func fetchWindows() -> [WindowInfo] {
-        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
-        guard let windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
-            return []
-        }
+    private func fetchWindows() async -> [WindowInfo] {
+        // 需要过滤的系统应用 bundle ID
+        let excludedBundleIDs: Set<String> = [
+            "com.apple.dock",
+            "com.apple.controlcenter",
+            "com.apple.notificationcenterui",
+            "com.apple.WindowManager",
+            "com.apple.Spotlight",
+        ]
         
-        var results: [WindowInfo] = []
-        let currentPID = ProcessInfo.processInfo.processIdentifier
-        var seenApps = Set<pid_t>()
-        
-        for info in windowList {
-            guard let windowID = info[kCGWindowNumber as String] as? CGWindowID,
-                  let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t,
-                  ownerPID != currentPID,
-                  let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat],
-                  let x = boundsDict["X"], let y = boundsDict["Y"],
-                  let w = boundsDict["Width"], let h = boundsDict["Height"],
-                  w > 50, h > 50 else { continue }
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
+            let currentPID = ProcessInfo.processInfo.processIdentifier
             
-            let layer = info[kCGWindowLayer as String] as? Int ?? 0
-            guard layer == 0 else { continue }
+            var results: [WindowInfo] = []
+            var seenApps = Set<pid_t>()
             
-            // 每个应用只取一个窗口
-            guard !seenApps.contains(ownerPID) else { continue }
-            seenApps.insert(ownerPID)
-            
-            let name = info[kCGWindowName as String] as? String ?? ""
-            let ownerName = info[kCGWindowOwnerName as String] as? String ?? ""
-            let bounds = CGRect(x: x, y: y, width: w, height: h)
-            
-            // 获取应用图标
-            var appIcon: NSImage?
-            if let app = NSRunningApplication(processIdentifier: ownerPID) {
-                appIcon = app.icon
+            for scWindow in content.windows {
+                guard let app = scWindow.owningApplication else { continue }
+                let ownerPID = app.processID
+                let bundleID = app.bundleIdentifier
+                
+                // 过滤条件
+                guard ownerPID != currentPID,
+                      !excludedBundleIDs.contains(bundleID),
+                      scWindow.frame.width > 100,
+                      scWindow.frame.height > 100,
+                      scWindow.isOnScreen,
+                      !(scWindow.title ?? "").isEmpty else { continue }
+                
+                // 每个应用只取一个窗口
+                guard !seenApps.contains(ownerPID) else { continue }
+                seenApps.insert(ownerPID)
+                
+                let ownerName = app.applicationName
+                let name = scWindow.title ?? ""
+                let displayName = "\(ownerName) - \(name)"
+                
+                // 截取窗口缩略图
+                var thumbnail: NSImage?
+                do {
+                    let filter = SCContentFilter(desktopIndependentWindow: scWindow)
+                    let config = SCStreamConfiguration()
+                    config.width = 400
+                    config.height = Int(400 * scWindow.frame.height / scWindow.frame.width)
+                    config.showsCursor = false
+                    
+                    let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+                    thumbnail = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+                } catch {
+                    // 截图失败时使用应用图标
+                    if let app = NSRunningApplication(processIdentifier: ownerPID) {
+                        thumbnail = app.icon
+                    }
+                }
+                
+                results.append(WindowInfo(
+                    id: scWindow.windowID,
+                    name: displayName,
+                    ownerName: ownerName,
+                    bounds: scWindow.frame,
+                    thumbnail: thumbnail,
+                    pid: ownerPID,
+                    scWindow: scWindow
+                ))
             }
             
-            let displayName = name.isEmpty ? ownerName : "\(ownerName) - \(name)"
-            
-            results.append(WindowInfo(
-                id: windowID,
-                name: displayName,
-                ownerName: ownerName,
-                bounds: bounds,
-                appIcon: appIcon,
-                pid: ownerPID
-            ))
+            return results
+        } catch {
+            return []
         }
-        
-        return results
     }
 }
-
-import SwiftUI
 
 struct WindowPickerView: View {
     let windows: [WindowInfo]
@@ -150,16 +176,22 @@ struct WindowThumbnailView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            if let icon = window.appIcon {
-                Image(nsImage: icon)
+            if let thumbnail = window.thumbnail {
+                Image(nsImage: thumbnail)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 64, height: 64)
+                    .frame(height: 120)
+                    .cornerRadius(8)
+                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
             } else {
-                Image(systemName: "macwindow")
-                    .font(.system(size: 48))
-                    .foregroundColor(.gray)
-                    .frame(width: 64, height: 64)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 120)
+                    .overlay(
+                        Image(systemName: "macwindow")
+                            .font(.largeTitle)
+                            .foregroundColor(.gray)
+                    )
             }
             
             Text(window.name)
