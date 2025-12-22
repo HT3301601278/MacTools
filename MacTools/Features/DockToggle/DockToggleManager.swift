@@ -57,12 +57,6 @@ final class DockToggleManager {
         guard AXUIElementCopyElementAtPosition(systemWide, Float(location.x), Float(flippedY), &elementRef) == .success,
               let element = elementRef else { return nil }
         
-        var pidValue: pid_t = 0
-        guard AXUIElementGetPid(element, &pidValue) == .success else { return nil }
-        
-        let dockApps = NSWorkspace.shared.runningApplications.filter { $0.bundleIdentifier == "com.apple.dock" }
-        guard let dockApp = dockApps.first, dockApp.processIdentifier == pidValue else { return nil }
-        
         var current: AXUIElement? = element
         while let elem = current {
             if let bundleId = extractBundleId(from: elem) {
@@ -88,22 +82,18 @@ final class DockToggleManager {
             } else if let urlString = urlRef as? String {
                 url = URL(string: urlString)
             }
-            if let url = url {
-                return Bundle(url: url)?.bundleIdentifier
+            if let bundleId = url.flatMap({ Bundle(url: $0)?.bundleIdentifier }) {
+                return bundleId
             }
         }
         
         var titleRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &titleRef) == .success,
-           let title = titleRef as? String, !title.isEmpty {
-            if title == "废纸篓" || title == "Trash" {
-                return "com.apple.finder"
-            }
-            let apps = NSWorkspace.shared.runningApplications
-            if let matchedApp = apps.first(where: { $0.localizedName == title }) {
-                return matchedApp.bundleIdentifier
-            }
+           let title = titleRef as? String,
+           title == "废纸篓" || title == "Trash" {
+            return "com.apple.finder"
         }
+        
         return nil
     }
     
