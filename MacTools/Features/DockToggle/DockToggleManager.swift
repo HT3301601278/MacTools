@@ -57,20 +57,7 @@ final class DockToggleManager {
         guard AXUIElementCopyElementAtPosition(systemWide, Float(location.x), Float(flippedY), &elementRef) == .success,
               let element = elementRef else { return nil }
         
-        var current: AXUIElement? = element
-        while let elem = current {
-            if let bundleId = extractBundleId(from: elem) {
-                return bundleId
-            }
-            var parentRef: CFTypeRef?
-            if AXUIElementCopyAttributeValue(elem, kAXParentAttribute as CFString, &parentRef) == .success,
-               CFGetTypeID(parentRef!) == AXUIElementGetTypeID() {
-                current = (parentRef as! AXUIElement)
-            } else {
-                break
-            }
-        }
-        return nil
+        return extractBundleId(from: element)
     }
     
     private func extractBundleId(from element: AXUIElement) -> String? {
