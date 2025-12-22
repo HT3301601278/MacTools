@@ -2,6 +2,26 @@ import AppKit
 import SwiftUI
 import ApplicationServices
 
+struct WindowSize: Identifiable, Hashable {
+    let id = UUID()
+    let width: Int
+    let height: Int
+    var label: String { "\(width)×\(height)" }
+}
+
+let presetSizes: [WindowSize] = [
+    WindowSize(width: 640, height: 360),
+    WindowSize(width: 800, height: 500),
+    WindowSize(width: 960, height: 540),
+    WindowSize(width: 1024, height: 640),
+    WindowSize(width: 1280, height: 720),
+    WindowSize(width: 1280, height: 800),
+    WindowSize(width: 1360, height: 765),
+    WindowSize(width: 1440, height: 900),
+    WindowSize(width: 1600, height: 900),
+    WindowSize(width: 1600, height: 1000),
+]
+
 final class SizePickerPanel {
     static let shared = SizePickerPanel()
     
@@ -107,7 +127,7 @@ struct SizePickerView: View {
             
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(WindowResizer.presetSizes) { size in
+                    ForEach(presetSizes) { size in
                         Button(size.label) {
                             onSelect(size)
                         }

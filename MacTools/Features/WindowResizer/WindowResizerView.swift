@@ -50,7 +50,7 @@ struct WindowResizerView: View {
             
             Section("预设尺寸") {
                 LazyVGrid(columns: columns, spacing: 8) {
-                    ForEach(WindowResizer.presetSizes) { size in
+                    ForEach(presetSizes) { size in
                         Text(size.label)
                             .font(.caption)
                             .padding(.horizontal, 8)
