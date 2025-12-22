@@ -6,7 +6,6 @@ final class WindowPickerPanel {
     static let shared = WindowPickerPanel()
     
     private var panel: NSPanel?
-    private var hostingView: NSHostingView<WindowPickerView>?
     
     private init() {}
     
@@ -17,39 +16,43 @@ final class WindowPickerPanel {
             let windows = await ScreenCapture.fetchWindows()
             guard !windows.isEmpty else { return }
             
-            let view = WindowPickerView(windows: windows) { selectedWindow in
-                self.close()
-                SizePickerPanel.shared.show(for: selectedWindow)
-            } onCancel: {
-                self.close()
+            await MainActor.run {
+                self.presentPanel(with: windows)
             }
-            
-            let hostingView = NSHostingView(rootView: view)
-            self.hostingView = hostingView
-            
-            let panel = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
-                styleMask: [.titled, .closable, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-            panel.title = "选择窗口"
-            panel.titlebarAppearsTransparent = true
-            panel.isMovableByWindowBackground = true
-            panel.level = .floating
-            panel.contentView = hostingView
-            panel.center()
-            panel.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            
-            self.panel = panel
         }
     }
     
     func close() {
         panel?.close()
         panel = nil
-        hostingView = nil
+    }
+    
+    @MainActor
+    private func presentPanel(with windows: [WindowInfo]) {
+        let view = WindowPickerView(windows: windows) { selectedWindow in
+            self.close()
+            SizePickerPanel.shared.show(for: selectedWindow)
+        } onCancel: {
+            self.close()
+        }
+        
+        let hostingController = NSHostingController(rootView: view)
+        
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
+            styleMask: [.titled, .closable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        panel.title = "选择窗口"
+        panel.titlebarAppearsTransparent = true
+        panel.isMovableByWindowBackground = true
+        panel.level = .floating
+        panel.contentViewController = hostingController
+        panel.center()
+        panel.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        self.panel = panel
     }
 }
 

@@ -22,6 +22,7 @@ let presetSizes: [WindowSize] = [
     WindowSize(width: 1600, height: 1000),
 ]
 
+@MainActor
 final class SizePickerPanel {
     static let shared = SizePickerPanel()
     
@@ -41,7 +42,7 @@ final class SizePickerPanel {
             self.close()
         }
         
-        let hostingView = NSHostingView(rootView: view)
+        let hostingController = NSHostingController(rootView: view)
         
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 350),
@@ -53,11 +54,10 @@ final class SizePickerPanel {
         panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = true
         panel.level = .floating
-        panel.contentView = hostingView
+        panel.contentViewController = hostingController
         panel.center()
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        
         self.panel = panel
     }
     
