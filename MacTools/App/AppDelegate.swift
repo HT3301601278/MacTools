@@ -13,9 +13,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = AXIsProcessTrustedWithOptions(options)
         
         DockToggleManager.shared.start()
+        WindowResizerManager.shared.start()
     }
     
     func applicationWillTerminate(_ notification: Notification) {
         DockToggleManager.shared.stop()
+        WindowResizerManager.shared.stop()
     }
 }
