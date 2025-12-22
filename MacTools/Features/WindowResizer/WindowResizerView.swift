@@ -53,6 +53,10 @@ struct WindowResizerView: View {
                     ForEach(PresetSizeStore.shared.sizes) { size in
                         SizeRowView(size: size) {
                             editingSize = size
+                        } onDelete: {
+                            if let idx = PresetSizeStore.shared.sizes.firstIndex(where: { $0.id == size.id }) {
+                                PresetSizeStore.shared.delete(at: IndexSet(integer: idx))
+                            }
                         }
                     }
                     .onMove { PresetSizeStore.shared.move(from: $0, to: $1) }
@@ -65,6 +69,16 @@ struct WindowResizerView: View {
                     Text("预设尺寸")
                     Spacer()
                     Button {
+                        PresetSizeStore.shared.resetToDefault()
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise.circle.fill")
+                            .foregroundStyle(.orange)
+                            .imageScale(.large)
+                    }
+                    .buttonStyle(.plain)
+                    .help("恢复默认")
+                    
+                    Button {
                         showAddSheet = true
                     } label: {
                         Image(systemName: "plus.circle.fill")
@@ -72,6 +86,7 @@ struct WindowResizerView: View {
                             .imageScale(.large)
                     }
                     .buttonStyle(.plain)
+                    .help("新增尺寸")
                 }
             }
         }
@@ -124,6 +139,7 @@ struct WindowResizerView: View {
 struct SizeRowView: View {
     let size: WindowSize
     let onEdit: () -> Void
+    let onDelete: () -> Void
     
     @State private var isHovering = false
     
@@ -144,6 +160,14 @@ struct SizeRowView: View {
                 } label: {
                     Image(systemName: "pencil.circle.fill")
                         .foregroundStyle(.blue)
+                }
+                .buttonStyle(.plain)
+                
+                Button {
+                    onDelete()
+                } label: {
+                    Image(systemName: "trash.circle.fill")
+                        .foregroundStyle(.red)
                 }
                 .buttonStyle(.plain)
             }
