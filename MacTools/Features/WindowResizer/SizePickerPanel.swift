@@ -70,13 +70,11 @@ final class SizePickerPanel {
     private func resizeWindow(to size: WindowSize) {
         guard let window = targetWindow else { return }
         
-        // 通过 AX API 调整窗口大小
         let axApp = AXUIElementCreateApplication(window.pid)
         var windowsRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &windowsRef) == .success,
               let windows = windowsRef as? [AXUIElement] else { return }
         
-        // 找到匹配的窗口
         for axWindow in windows {
             var posRef: CFTypeRef?
             var sizeRef: CFTypeRef?
@@ -89,17 +87,14 @@ final class SizePickerPanel {
             AXValueGetValue(posRef as! AXValue, .cgPoint, &pos)
             AXValueGetValue(sizeRef as! AXValue, .cgSize, &sz)
             
-            // 匹配位置和大小
             let tolerance: CGFloat = 10
             if abs(pos.x - window.bounds.origin.x) < tolerance &&
                abs(pos.y - window.bounds.origin.y) < tolerance {
                 
-                // 设置新大小
                 var newSize = CGSize(width: CGFloat(size.width), height: CGFloat(size.height))
                 let sizeValue: CFTypeRef = AXValueCreate(.cgSize, &newSize)!
                 AXUIElementSetAttributeValue(axWindow, kAXSizeAttribute as CFString, sizeValue)
                 
-                // 可选：调整位置到屏幕左上角
                 var newPos = CGPoint(x: 100, y: 80)
                 let posValue: CFTypeRef = AXValueCreate(.cgPoint, &newPos)!
                 AXUIElementSetAttributeValue(axWindow, kAXPositionAttribute as CFString, posValue)
