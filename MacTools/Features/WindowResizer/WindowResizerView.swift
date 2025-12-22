@@ -227,6 +227,7 @@ struct SizeEditSheet: View {
                 Text("×")
                     .font(.title2)
                     .foregroundStyle(.secondary)
+                    .padding(.top, 18)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("高度")
