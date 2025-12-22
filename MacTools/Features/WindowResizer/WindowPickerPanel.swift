@@ -1,17 +1,5 @@
 import AppKit
-import ApplicationServices
-import ScreenCaptureKit
 import SwiftUI
-
-struct WindowInfo: Identifiable {
-    let id: CGWindowID
-    let name: String
-    let ownerName: String
-    let bounds: CGRect
-    var thumbnail: NSImage?
-    let pid: pid_t
-    let scWindow: SCWindow?
-}
 
 @MainActor
 final class WindowPickerPanel {
@@ -26,7 +14,7 @@ final class WindowPickerPanel {
         close()
         
         Task {
-            let windows = await fetchWindows()
+            let windows = await ScreenCapture.fetchWindows()
             guard !windows.isEmpty else { return }
             
             let view = WindowPickerView(windows: windows) { selectedWindow in
@@ -62,79 +50,6 @@ final class WindowPickerPanel {
         panel?.close()
         panel = nil
         hostingView = nil
-    }
-    
-    private func fetchWindows() async -> [WindowInfo] {
-        // 需要过滤的系统应用 bundle ID
-        let excludedBundleIDs: Set<String> = [
-            "com.apple.dock",
-            "com.apple.controlcenter",
-            "com.apple.notificationcenterui",
-            "com.apple.WindowManager",
-            "com.apple.Spotlight",
-        ]
-        
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
-            let currentPID = ProcessInfo.processInfo.processIdentifier
-            
-            var results: [WindowInfo] = []
-            var seenApps = Set<pid_t>()
-            
-            for scWindow in content.windows {
-                guard let app = scWindow.owningApplication else { continue }
-                let ownerPID = app.processID
-                let bundleID = app.bundleIdentifier
-                
-                // 过滤条件
-                guard ownerPID != currentPID,
-                      !excludedBundleIDs.contains(bundleID),
-                      scWindow.frame.width > 100,
-                      scWindow.frame.height > 100,
-                      scWindow.isOnScreen,
-                      !(scWindow.title ?? "").isEmpty else { continue }
-                
-                // 每个应用只取一个窗口
-                guard !seenApps.contains(ownerPID) else { continue }
-                seenApps.insert(ownerPID)
-                
-                let ownerName = app.applicationName
-                let name = scWindow.title ?? ""
-                let displayName = "\(ownerName) - \(name)"
-                
-                // 截取窗口缩略图
-                var thumbnail: NSImage?
-                do {
-                    let filter = SCContentFilter(desktopIndependentWindow: scWindow)
-                    let config = SCStreamConfiguration()
-                    config.width = 400
-                    config.height = Int(400 * scWindow.frame.height / scWindow.frame.width)
-                    config.showsCursor = false
-                    
-                    let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
-                    thumbnail = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-                } catch {
-                    // 截图失败时使用应用图标
-                    if let app = NSRunningApplication(processIdentifier: ownerPID) {
-                        thumbnail = app.icon
-                    }
-                }
-                
-                results.append(WindowInfo(
-                    id: scWindow.windowID,
-                    name: displayName,
-                    ownerName: ownerName,
-                    bounds: scWindow.frame,
-                    thumbnail: thumbnail,
-                    pid: ownerPID,
-                    scWindow: scWindow
-                ))
-            }
-            
-            return results
-        } catch {
-            return []
-        }
     }
 }
 
