@@ -25,16 +25,14 @@ final class DockToggleManager {
         guard UserDefaults.standard.bool(forKey: "dockToggleEnabled") else { return }
         guard AXIsProcessTrusted() else { return }
         
-        let frontApp = NSWorkspace.shared.frontmostApplication
         let location = NSEvent.mouseLocation
         
-        guard let dockFrame = getDockFrame(), dockFrame.contains(location) else { return }
-        guard let app = frontApp,
+        guard let clickedBundleId = bundleIdentifierAtDockPosition(location) else { return }
+        
+        guard let app = NSWorkspace.shared.frontmostApplication,
               let frontBundleId = app.bundleIdentifier,
               frontBundleId != Bundle.main.bundleIdentifier,
-              frontBundleId != "com.apple.dock" else { return }
-        
-        guard let clickedBundleId = bundleIdentifierAtDockPosition(location),
+              frontBundleId != "com.apple.dock",
               clickedBundleId == frontBundleId else { return }
         
         let windowCountBefore = visibleWindowCount(app)
@@ -127,34 +125,5 @@ final class DockToggleManager {
               let focusedWindowRef else { return }
         let focusedWindow = focusedWindowRef as! AXUIElement
         AXUIElementSetAttributeValue(focusedWindow, kAXMinimizedAttribute as CFString, true as CFTypeRef)
-    }
-    
-    private func getDockFrame() -> CGRect? {
-        guard let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] else {
-            return nil
-        }
-        guard let screen = NSScreen.main else { return nil }
-        
-        var largestDockFrame: CGRect?
-        var largestArea: CGFloat = 0
-        
-        for window in windowList {
-            guard let ownerName = window[kCGWindowOwnerName as String] as? String,
-                  ownerName == "Dock" || ownerName == "程序坞",
-                  let boundsDict = window[kCGWindowBounds as String] as? NSDictionary else {
-                continue
-            }
-            
-            var bounds = CGRect.zero
-            guard CGRectMakeWithDictionaryRepresentation(boundsDict as CFDictionary, &bounds) else { continue }
-            
-            let area = bounds.width * bounds.height
-            if area > largestArea {
-                largestArea = area
-                let flippedY = screen.frame.height - bounds.origin.y - bounds.height
-                largestDockFrame = CGRect(x: bounds.origin.x, y: flippedY, width: bounds.width, height: bounds.height)
-            }
-        }
-        return largestDockFrame
     }
 }
