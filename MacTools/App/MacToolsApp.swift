@@ -9,10 +9,5 @@ struct MacToolsApp: App {
         Window("MacTools", id: "main") {
             ContentView()
         }
-        
-        MenuBarExtra("MacTools", systemImage: "wrench.and.screwdriver") {
-            MenuBarView()
-        }
-        .menuBarExtraStyle(.window)
     }
 }
