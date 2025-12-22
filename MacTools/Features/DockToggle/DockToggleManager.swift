@@ -27,12 +27,8 @@ final class DockToggleManager {
         
         let frontApp = NSWorkspace.shared.frontmostApplication
         let location = NSEvent.mouseLocation
-        guard let screen = NSScreen.main else { return }
         
-        let dockHeight: CGFloat = 80
-        let dockArea = CGRect(x: 0, y: 0, width: screen.frame.width, height: dockHeight)
-        
-        guard dockArea.contains(location) else { return }
+        guard let dockFrame = getDockFrame(), dockFrame.contains(location) else { return }
         guard let app = frontApp,
               let frontBundleId = app.bundleIdentifier,
               frontBundleId != Bundle.main.bundleIdentifier,
@@ -131,5 +127,34 @@ final class DockToggleManager {
               let focusedWindowRef else { return }
         let focusedWindow = focusedWindowRef as! AXUIElement
         AXUIElementSetAttributeValue(focusedWindow, kAXMinimizedAttribute as CFString, true as CFTypeRef)
+    }
+    
+    private func getDockFrame() -> CGRect? {
+        guard let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] else {
+            return nil
+        }
+        guard let screen = NSScreen.main else { return nil }
+        
+        var largestDockFrame: CGRect?
+        var largestArea: CGFloat = 0
+        
+        for window in windowList {
+            guard let ownerName = window[kCGWindowOwnerName as String] as? String,
+                  ownerName == "Dock" || ownerName == "程序坞",
+                  let boundsDict = window[kCGWindowBounds as String] as? NSDictionary else {
+                continue
+            }
+            
+            var bounds = CGRect.zero
+            guard CGRectMakeWithDictionaryRepresentation(boundsDict as CFDictionary, &bounds) else { continue }
+            
+            let area = bounds.width * bounds.height
+            if area > largestArea {
+                largestArea = area
+                let flippedY = screen.frame.height - bounds.origin.y - bounds.height
+                largestDockFrame = CGRect(x: bounds.origin.x, y: flippedY, width: bounds.width, height: bounds.height)
+            }
+        }
+        return largestDockFrame
     }
 }
