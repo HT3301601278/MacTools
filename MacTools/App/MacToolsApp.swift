@@ -9,5 +9,6 @@ struct MacToolsApp: App {
         Window("", id: "main") {
             ContentView()
         }
+        .defaultSize(width: 800, height: 500)
     }
 }
