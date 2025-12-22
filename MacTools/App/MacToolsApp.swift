@@ -6,7 +6,7 @@ struct MacToolsApp: App {
     private var appDelegate
 
     var body: some Scene {
-        Window("MacTools", id: "main") {
+        Window("", id: "main") {
             ContentView()
         }
     }
