@@ -27,7 +27,6 @@ enum ScreenCapture {
             let currentPID = ProcessInfo.processInfo.processIdentifier
             
             var results: [WindowInfo] = []
-            var seenApps = Set<pid_t>()
             
             for scWindow in content.windows {
                 guard let app = scWindow.owningApplication else { continue }
@@ -40,9 +39,6 @@ enum ScreenCapture {
                       scWindow.frame.height > 100,
                       scWindow.isOnScreen,
                       !(scWindow.title ?? "").isEmpty else { continue }
-                
-                guard !seenApps.contains(ownerPID) else { continue }
-                seenApps.insert(ownerPID)
                 
                 let ownerName = app.applicationName
                 let name = scWindow.title ?? ""

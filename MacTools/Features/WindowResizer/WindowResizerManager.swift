@@ -15,12 +15,17 @@ final class WindowResizerManager: FeatureManager {
     }
     
     private init() {
-        keyCode = UInt16(UserDefaults.standard.integer(forKey: "windowResizerKeyCode"))
-        let storedModifiers = UserDefaults.standard.integer(forKey: "windowResizerModifiers")
-        modifiers = storedModifiers != 0 ? CGEventFlags(rawValue: UInt64(storedModifiers)) : [.maskCommand, .maskShift]
-        
-        if keyCode == 0 {
+        let defaults = UserDefaults.standard
+        if let storedKey = defaults.object(forKey: "windowResizerKeyCode") as? Int {
+            keyCode = UInt16(storedKey)
+        } else {
             keyCode = UInt16(kVK_ANSI_W)
+        }
+        
+        if let storedModifiers = defaults.object(forKey: "windowResizerModifiers") as? Int {
+            modifiers = CGEventFlags(rawValue: UInt64(storedModifiers))
+        } else {
+            modifiers = [.maskCommand, .maskShift]
         }
     }
     

@@ -17,16 +17,6 @@ struct GeneralSettingsView: View {
                     if hasAccessibility {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
-                    } else if AXIsProcessTrusted() {
-                        Button("重启生效") {
-                            let url = Bundle.main.bundleURL
-                            let task = Process()
-                            task.launchPath = "/usr/bin/open"
-                            task.arguments = [url.path]
-                            task.launch()
-                            NSApp.terminate(nil)
-                        }
-                        .buttonStyle(.borderedProminent)
                     } else {
                         Button("去授权") {
                             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
