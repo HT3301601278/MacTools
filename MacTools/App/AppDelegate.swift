@@ -58,6 +58,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = nil
     }
     
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+    
     func applicationWillTerminate(_ notification: Notification) {
         DockToggleManager.shared.stop()
         WindowResizerManager.shared.stop()
