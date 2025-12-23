@@ -50,23 +50,11 @@ final class SizePickerPanel {
         panel.contentViewController = hostingController
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        centerOnMainScreen(panel)
-        DispatchQueue.main.async {
-            self.centerOnMainScreen(panel)
+        panel.centerOnVisibleScreen()
+        DispatchQueue.main.async { [weak panel] in
+            panel?.centerOnVisibleScreen()
         }
         self.panel = panel
-    }
-
-    private func centerOnMainScreen(_ panel: NSPanel) {
-        panel.contentView?.layoutSubtreeIfNeeded()
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else {
-            panel.center()
-            return
-        }
-        let frame = screen.visibleFrame
-        let size = panel.frame.size
-        let origin = NSPoint(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2)
-        panel.setFrameOrigin(origin)
     }
     
     func close() {
