@@ -37,6 +37,6 @@ struct ContentView: View {
                 WindowResizerView()
             }
         }
-        .frame(minWidth: 500, minHeight: 350)
+        .frame(minWidth: 720, minHeight: 450)
     }
 }

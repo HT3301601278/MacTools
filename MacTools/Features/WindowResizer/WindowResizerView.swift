@@ -7,6 +7,7 @@ struct WindowResizerView: View {
     @State private var shortcutDisplay = WindowResizerManager.shared.shortcutDescription
     @State private var showAddSheet = false
     @State private var editingSize: WindowSize?
+    @State private var shortcutMonitor: Any?
     
     var body: some View {
         Form {
@@ -104,9 +105,14 @@ struct WindowResizerView: View {
     }
     
     private func startRecording() {
+        if let monitor = shortcutMonitor {
+            NSEvent.removeMonitor(monitor)
+            shortcutMonitor = nil
+        }
+        
         isRecordingShortcut = true
         
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        shortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let modifiers = CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
             let hasModifier = event.modifierFlags.contains(.command) ||
                               event.modifierFlags.contains(.control) ||
@@ -117,16 +123,20 @@ struct WindowResizerView: View {
                 WindowResizerManager.shared.modifiers = modifiers
                 WindowResizerManager.shared.restart()
                 
-                DispatchQueue.main.async {
-                    self.shortcutDisplay = WindowResizerManager.shared.shortcutDescription
-                    self.isRecordingShortcut = false
+                shortcutDisplay = WindowResizerManager.shared.shortcutDescription
+                isRecordingShortcut = false
+                if let monitor = shortcutMonitor {
+                    NSEvent.removeMonitor(monitor)
+                    shortcutMonitor = nil
                 }
                 return nil
             }
             
             if event.keyCode == 53 { // Escape
-                DispatchQueue.main.async {
-                    self.isRecordingShortcut = false
+                isRecordingShortcut = false
+                if let monitor = shortcutMonitor {
+                    NSEvent.removeMonitor(monitor)
+                    shortcutMonitor = nil
                 }
                 return nil
             }

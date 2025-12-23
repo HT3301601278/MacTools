@@ -39,7 +39,7 @@ final class WindowPickerPanel {
         let hostingController = NSHostingController(rootView: view)
         
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 960, height: 620),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -87,7 +87,7 @@ struct WindowPickerView: View {
             }
             .padding(12)
         }
-        .frame(minWidth: 600, minHeight: 400)
+        .frame(minWidth: 760, minHeight: 500)
     }
 }
 

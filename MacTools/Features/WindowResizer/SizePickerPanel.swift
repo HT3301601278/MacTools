@@ -38,7 +38,7 @@ final class SizePickerPanel {
         let hostingController = NSHostingController(rootView: view)
         
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 350),
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 420),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -113,7 +113,7 @@ struct SizePickerView: View {
             Text(windowName)
                 .font(.headline)
                 .lineLimit(1)
-                .padding(.top, 16)
+                .padding(.top, 20)
                 .padding(.horizontal)
             
             ScrollView {
@@ -138,6 +138,6 @@ struct SizePickerView: View {
             }
             .padding(12)
         }
-        .frame(minWidth: 350, minHeight: 280)
+        .frame(minWidth: 420, minHeight: 320)
     }
 }
