@@ -21,6 +21,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         DockToggleManager.shared.start()
         WindowResizerManager.shared.start()
+
+        DispatchQueue.main.async {
+            if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
+                window.centerOnVisibleScreen()
+            }
+        }
     }
     
     private func setupStatusItem() {

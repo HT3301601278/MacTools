@@ -1,6 +1,6 @@
 import AppKit
 
-extension NSPanel {
+extension NSWindow {
     func centerOnVisibleScreen() {
         contentView?.layoutSubtreeIfNeeded()
         guard let screen = self.screen ?? NSScreen.main ?? NSScreen.screens.first else {
