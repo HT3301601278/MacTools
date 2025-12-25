@@ -7,9 +7,9 @@ extension NSPanel {
             center()
             return
         }
-        let frame = screen.visibleFrame
-        let size = self.frame.size
-        let origin = NSPoint(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2)
+        let screenFrame = screen.frame
+        let panelSize = self.frame.size
+        let origin = NSPoint(x: screenFrame.midX - panelSize.width / 2, y: screenFrame.midY - panelSize.height / 2)
         setFrameOrigin(origin)
     }
 }
