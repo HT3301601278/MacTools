@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func showMenu() {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApp.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "退出", action: #selector(NSApp.terminate(_:)), keyEquivalent: ""))
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
         statusItem.menu = nil
