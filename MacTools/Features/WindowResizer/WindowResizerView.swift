@@ -9,7 +9,7 @@ struct WindowResizerView: View {
     @State private var showAddSheet = false
     @State private var editingSize: WindowSize?
     @State private var shortcutMonitor: Any?
-    
+
     var body: some View {
         Form {
             Section {
@@ -26,12 +26,12 @@ struct WindowResizerView: View {
                 Text("按下快捷键后会弹出窗口选择器，选择窗口后再选择目标尺寸")
                     .foregroundStyle(.secondary)
             }
-            
+
             Section("快捷键") {
                 HStack {
                     Text("触发快捷键")
                     Spacer()
-                    
+
                     if isRecordingShortcut {
                         Text("按下新快捷键...")
                             .foregroundColor(.orange)
@@ -49,7 +49,7 @@ struct WindowResizerView: View {
                     }
                 }
             }
-            
+
             Section {
                 List {
                     ForEach(PresetSizeStore.shared.sizes) { size in
@@ -83,7 +83,7 @@ struct WindowResizerView: View {
                     }
                     .buttonStyle(.plain)
                     .help("恢复默认")
-                    
+
                     Button {
                         showAddSheet = true
                     } label: {
@@ -108,7 +108,7 @@ struct WindowResizerView: View {
             shortcutDisplay = WindowResizerManager.shared.shortcutDescription
         }
     }
-    
+
     private func startRecording() {
         if let monitor = shortcutMonitor {
             NSEvent.removeMonitor(monitor)
@@ -117,18 +117,18 @@ struct WindowResizerView: View {
 
         isRecordingShortcut = true
         KeyCodeUtils.isRecordingShortcut = true
-        
+
         shortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let modifiers = CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
             let hasModifier = event.modifierFlags.contains(.command) ||
                               event.modifierFlags.contains(.control) ||
                               event.modifierFlags.contains(.option)
-            
+
             if hasModifier {
                 WindowResizerManager.shared.keyCode = event.keyCode
                 WindowResizerManager.shared.modifiers = modifiers
                 WindowResizerManager.shared.restart()
-                
+
                 shortcutDisplay = WindowResizerManager.shared.shortcutDescription
                 isRecordingShortcut = false
                 KeyCodeUtils.isRecordingShortcut = false
@@ -139,7 +139,7 @@ struct WindowResizerView: View {
                 return nil
             }
 
-            if event.keyCode == 53 { // Escape
+            if event.keyCode == 53 {
                 isRecordingShortcut = false
                 KeyCodeUtils.isRecordingShortcut = false
                 if let monitor = shortcutMonitor {
@@ -148,7 +148,7 @@ struct WindowResizerView: View {
                 }
                 return nil
             }
-            
+
             return event
         }
     }
@@ -158,21 +158,21 @@ struct SizeRowView: View {
     let size: WindowSize
     let onEdit: () -> Void
     let onDelete: () -> Void
-    
+
     @State private var isHovering = false
-    
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "line.3.horizontal")
                 .foregroundStyle(.secondary)
                 .frame(width: 12)
-            
+
             Text(size.label)
                 .font(.system(.body, design: .monospaced))
                 .fontWeight(.semibold)
-            
+
             Spacer()
-            
+
             HStack(spacing: 8) {
                 Button {
                     onEdit()
@@ -181,7 +181,7 @@ struct SizeRowView: View {
                         .foregroundStyle(.blue)
                 }
                 .buttonStyle(.plain)
-                
+
                 Button {
                     onDelete()
                 } label: {
@@ -210,7 +210,7 @@ struct SizeRowView: View {
 enum SizeEditMode: Identifiable {
     case add
     case edit(WindowSize)
-    
+
     var id: String {
         switch self {
         case .add: return "add"
@@ -222,27 +222,27 @@ enum SizeEditMode: Identifiable {
 struct SizeEditSheet: View {
     let mode: SizeEditMode
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var width = ""
     @State private var height = ""
-    
+
     private var title: String {
         switch mode {
         case .add: return "新增尺寸"
         case .edit: return "编辑尺寸"
         }
     }
-    
+
     private var isValid: Bool {
         guard let w = Int(width), let h = Int(height) else { return false }
         return w > 0 && h > 0
     }
-    
+
     var body: some View {
         VStack(spacing: 20) {
             Text(title)
                 .font(.headline)
-            
+
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("宽度")
@@ -252,12 +252,12 @@ struct SizeEditSheet: View {
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 100)
                 }
-                
+
                 Text("×")
                     .font(.title2)
                     .foregroundStyle(.secondary)
                     .padding(.top, 18)
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text("高度")
                         .font(.caption)
@@ -267,11 +267,11 @@ struct SizeEditSheet: View {
                         .frame(width: 100)
                 }
             }
-            
+
             HStack(spacing: 12) {
                 Button("取消") { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                
+
                 Button("确定") { save() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!isValid)
@@ -286,7 +286,7 @@ struct SizeEditSheet: View {
             }
         }
     }
-    
+
     private func save() {
         guard let w = Int(width), let h = Int(height) else { return }
         switch mode {

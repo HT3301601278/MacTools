@@ -21,11 +21,11 @@ enum KeyCodeUtils {
         UInt16(kVK_Space): "Space", UInt16(kVK_Return): "↩",
         UInt16(kVK_Tab): "⇥", UInt16(kVK_Escape): "⎋",
     ]
-    
+
     static func toString(_ code: UInt16) -> String {
         keyMapping[code] ?? "?"
     }
-    
+
     static func modifiersDescription(_ flags: CGEventFlags) -> String {
         var parts: [String] = []
         if flags.contains(.maskControl) { parts.append("⌃") }
@@ -34,7 +34,7 @@ enum KeyCodeUtils {
         if flags.contains(.maskCommand) { parts.append("⌘") }
         return parts.joined()
     }
-    
+
     static func shortcutDescription(keyCode: UInt16, modifiers: CGEventFlags) -> String {
         modifiersDescription(modifiers) + toString(keyCode)
     }

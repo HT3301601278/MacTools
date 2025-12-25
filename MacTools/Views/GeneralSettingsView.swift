@@ -28,7 +28,7 @@ struct GeneralSettingsView: View {
                         .buttonStyle(.link)
                     }
                 }
-                
+
                 HStack {
                     Text("屏幕录制权限")
                     Spacer()
@@ -50,7 +50,7 @@ struct GeneralSettingsView: View {
                     }
                 }
             }
-            
+
             Section("启动") {
                 Toggle("开机自启动", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, newValue in
@@ -64,7 +64,7 @@ struct GeneralSettingsView: View {
                             launchAtLogin = SMAppService.mainApp.status == .enabled
                         }
                     }
-                
+
                 Toggle("在程序坞显示图标", isOn: $showInDock)
                     .onChange(of: showInDock) { _, newValue in
                         NSApp.setActivationPolicy(newValue ? .regular : .accessory)
@@ -80,7 +80,7 @@ struct GeneralSettingsView: View {
             checkScreenCapturePermission()
         }
     }
-    
+
     private func checkScreenCapturePermission() {
         Task {
             do {

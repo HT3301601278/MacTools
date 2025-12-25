@@ -4,9 +4,9 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     case general = "通用"
     case dockToggle = "Dock"
     case windowResizer = "窗口"
-    
+
     var id: String { rawValue }
-    
+
     var icon: String {
         switch self {
         case .general: return "gearshape"
