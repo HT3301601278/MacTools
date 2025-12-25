@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct WindowResizerView: View {
     @AppStorage("windowResizerEnabled") private var windowResizerEnabled = true
@@ -59,11 +60,15 @@ struct WindowResizerView: View {
                                 PresetSizeStore.shared.delete(at: IndexSet(integer: idx))
                             }
                         }
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
+                        .listRowBackground(Color.clear)
                     }
                     .onMove { PresetSizeStore.shared.move(from: $0, to: $1) }
                     .onDelete { PresetSizeStore.shared.delete(at: $0) }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .frame(minHeight: 200)
             } header: {
                 HStack {
@@ -154,17 +159,18 @@ struct SizeRowView: View {
     @State private var isHovering = false
     
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             Image(systemName: "line.3.horizontal")
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
+                .frame(width: 12)
             
             Text(size.label)
                 .font(.system(.body, design: .monospaced))
-                .fontWeight(.medium)
+                .fontWeight(.semibold)
             
             Spacer()
             
-            if isHovering {
+            HStack(spacing: 8) {
                 Button {
                     onEdit()
                 } label: {
@@ -181,8 +187,18 @@ struct SizeRowView: View {
                 }
                 .buttonStyle(.plain)
             }
+            .opacity(isHovering ? 1 : 0)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color(nsColor: .separatorColor))
+                )
+        )
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
     }
