@@ -4,11 +4,9 @@ import ScreenCaptureKit
 struct WindowInfo: Identifiable {
     let id: CGWindowID
     let name: String
-    let ownerName: String
     let bounds: CGRect
     var thumbnail: NSImage?
     let pid: pid_t
-    let scWindow: SCWindow?
 }
 
 enum ScreenCapture {
@@ -63,11 +61,9 @@ enum ScreenCapture {
                 results.append(WindowInfo(
                     id: scWindow.windowID,
                     name: displayName,
-                    ownerName: ownerName,
                     bounds: scWindow.frame,
                     thumbnail: thumbnail,
-                    pid: ownerPID,
-                    scWindow: scWindow
+                    pid: ownerPID
                 ))
             }
             
