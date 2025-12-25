@@ -114,8 +114,9 @@ struct WindowResizerView: View {
             NSEvent.removeMonitor(monitor)
             shortcutMonitor = nil
         }
-        
+
         isRecordingShortcut = true
+        KeyCodeUtils.isRecordingShortcut = true
         
         shortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let modifiers = CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
@@ -130,15 +131,17 @@ struct WindowResizerView: View {
                 
                 shortcutDisplay = WindowResizerManager.shared.shortcutDescription
                 isRecordingShortcut = false
+                KeyCodeUtils.isRecordingShortcut = false
                 if let monitor = shortcutMonitor {
                     NSEvent.removeMonitor(monitor)
                     shortcutMonitor = nil
                 }
                 return nil
             }
-            
+
             if event.keyCode == 53 { // Escape
                 isRecordingShortcut = false
+                KeyCodeUtils.isRecordingShortcut = false
                 if let monitor = shortcutMonitor {
                     NSEvent.removeMonitor(monitor)
                     shortcutMonitor = nil
