@@ -52,15 +52,7 @@ final class WindowPickerPanel {
         
         let windowSize = NSSize(width: 760, height: 475)
         panel.setContentSize(windowSize)
-        
-        let screen = NSScreen.main ?? NSScreen.screens.first!
-        let screenFrame = screen.frame
-        let windowFrame = panel.frame
-        let origin = NSPoint(
-            x: screenFrame.midX - windowFrame.width / 2,
-            y: screenFrame.midY - windowFrame.height / 2
-        )
-        panel.setFrameOrigin(origin)
+        panel.centerOnVisibleScreen()
         
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
