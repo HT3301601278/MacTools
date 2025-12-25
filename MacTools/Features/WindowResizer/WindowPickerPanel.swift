@@ -4,29 +4,29 @@ import SwiftUI
 @MainActor
 final class WindowPickerPanel {
     static let shared = WindowPickerPanel()
-    
+
     private var panel: NSPanel?
-    
+
     private init() {}
-    
+
     func show() {
         close()
-        
+
         Task {
             let windows = await ScreenCapture.fetchWindows()
             guard !windows.isEmpty else { return }
-            
+
             await MainActor.run {
                 self.presentPanel(with: windows)
             }
         }
     }
-    
+
     func close() {
         panel?.close()
         panel = nil
     }
-    
+
     @MainActor
     private func presentPanel(with windows: [WindowInfo]) {
         let view = WindowPickerView(windows: windows) { selectedWindow in
@@ -35,9 +35,9 @@ final class WindowPickerPanel {
         } onCancel: {
             self.close()
         }
-        
+
         let hostingController = NSHostingController(rootView: view)
-        
+
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 760, height: 475),
             styleMask: [.titled, .closable, .fullSizeContentView],
@@ -49,11 +49,11 @@ final class WindowPickerPanel {
         panel.isMovableByWindowBackground = true
         panel.level = .floating
         panel.contentViewController = hostingController
-        
+
         let windowSize = NSSize(width: 760, height: 475)
         panel.setContentSize(windowSize)
         panel.centerOnVisibleScreen()
-        
+
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         self.panel = panel
@@ -64,9 +64,9 @@ struct WindowPickerView: View {
     let windows: [WindowInfo]
     let onSelect: (WindowInfo) -> Void
     let onCancel: () -> Void
-    
+
     private let columns = [GridItem(.adaptive(minimum: 200, maximum: 250))]
-    
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -78,9 +78,9 @@ struct WindowPickerView: View {
                 }
                 .padding(20)
             }
-            
+
             Divider()
-            
+
             HStack {
                 Spacer()
                 Button("取消") { onCancel() }
@@ -95,7 +95,7 @@ struct WindowPickerView: View {
 struct WindowThumbnailView: View {
     let window: WindowInfo
     @State private var isHovered = false
-    
+
     var body: some View {
         VStack(spacing: 8) {
             if let thumbnail = window.thumbnail {
@@ -115,7 +115,7 @@ struct WindowThumbnailView: View {
                             .foregroundColor(.gray)
                     )
             }
-            
+
             Text(window.name)
                 .font(.caption)
                 .lineLimit(2)

@@ -10,7 +10,7 @@ struct WindowInfo: Identifiable {
 }
 
 enum ScreenCapture {
-    
+
     private static let excludedBundleIDs: Set<String> = [
         "com.apple.dock",
         "com.apple.controlcenter",
@@ -18,30 +18,30 @@ enum ScreenCapture {
         "com.apple.WindowManager",
         "com.apple.Spotlight",
     ]
-    
+
     static func fetchWindows() async -> [WindowInfo] {
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
             let currentPID = ProcessInfo.processInfo.processIdentifier
-            
+
             var results: [WindowInfo] = []
-            
+
             for scWindow in content.windows {
                 guard let app = scWindow.owningApplication else { continue }
                 let ownerPID = app.processID
                 let bundleID = app.bundleIdentifier
-                
+
                 guard ownerPID != currentPID,
                       !excludedBundleIDs.contains(bundleID),
                       scWindow.frame.width > 100,
                       scWindow.frame.height > 100,
                       scWindow.isOnScreen,
                       !(scWindow.title ?? "").isEmpty else { continue }
-                
+
                 let ownerName = app.applicationName
                 let name = scWindow.title ?? ""
                 let displayName = "\(ownerName) - \(name)"
-                
+
                 var thumbnail: NSImage?
                 do {
                     let filter = SCContentFilter(desktopIndependentWindow: scWindow)
@@ -49,7 +49,7 @@ enum ScreenCapture {
                     config.width = 400
                     config.height = Int(400 * scWindow.frame.height / scWindow.frame.width)
                     config.showsCursor = false
-                    
+
                     let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
                     thumbnail = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
                 } catch {
@@ -57,7 +57,7 @@ enum ScreenCapture {
                         thumbnail = runningApp.icon
                     }
                 }
-                
+
                 results.append(WindowInfo(
                     id: scWindow.windowID,
                     name: displayName,
@@ -66,7 +66,7 @@ enum ScreenCapture {
                     pid: ownerPID
                 ))
             }
-            
+
             return results
         } catch {
             return []
