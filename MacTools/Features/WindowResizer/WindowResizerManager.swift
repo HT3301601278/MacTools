@@ -6,7 +6,7 @@ final class WindowResizerManager: FeatureManager {
     
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-    
+
     var keyCode: UInt16 {
         didSet { UserDefaults.standard.set(Int(keyCode), forKey: "windowResizerKeyCode") }
     }
@@ -66,6 +66,7 @@ final class WindowResizerManager: FeatureManager {
     
     private func handleEvent(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         guard type == .keyDown else { return Unmanaged.passRetained(event) }
+        guard !KeyCodeUtils.isRecordingShortcut else { return Unmanaged.passRetained(event) }
         guard UserDefaults.standard.bool(forKey: "windowResizerEnabled") else {
             return Unmanaged.passRetained(event)
         }
