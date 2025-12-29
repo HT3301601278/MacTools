@@ -71,6 +71,8 @@ final class SizePickerPanel {
         guard AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &windowsRef) == .success,
               let windows = windowsRef as? [AXUIElement] else { return }
 
+        let screenHeight = NSScreen.main?.frame.height ?? 0
+
         for axWindow in windows {
             var posRef: CFTypeRef?
             var sizeRef: CFTypeRef?
@@ -78,22 +80,33 @@ final class SizePickerPanel {
             guard AXUIElementCopyAttributeValue(axWindow, kAXPositionAttribute as CFString, &posRef) == .success,
                   AXUIElementCopyAttributeValue(axWindow, kAXSizeAttribute as CFString, &sizeRef) == .success else { continue }
 
-            var pos = CGPoint.zero
-            var sz = CGSize.zero
-            AXValueGetValue(posRef as! AXValue, .cgPoint, &pos)
-            AXValueGetValue(sizeRef as! AXValue, .cgSize, &sz)
+            var axPos = CGPoint.zero
+            var axSize = CGSize.zero
+            AXValueGetValue(posRef as! AXValue, .cgPoint, &axPos)
+            AXValueGetValue(sizeRef as! AXValue, .cgSize, &axSize)
 
-            let tolerance: CGFloat = 10
-            if abs(pos.x - window.bounds.origin.x) < tolerance &&
-               abs(pos.y - window.bounds.origin.y) < tolerance {
+            let scWindowTop = screenHeight - window.bounds.origin.y - window.bounds.height
 
-                var newSize = CGSize(width: CGFloat(size.width), height: CGFloat(size.height))
-                let sizeValue: CFTypeRef = AXValueCreate(.cgSize, &newSize)!
-                AXUIElementSetAttributeValue(axWindow, kAXSizeAttribute as CFString, sizeValue)
+            let tolerance: CGFloat = 30
+            let xMatch = abs(axPos.x - window.bounds.origin.x) < tolerance
+            let yMatch = abs(axPos.y - scWindowTop) < tolerance
+            let sizeMatch = abs(axSize.width - window.bounds.width) < tolerance &&
+                           abs(axSize.height - window.bounds.height) < tolerance
+
+            if (xMatch && yMatch) || sizeMatch {
+                if let app = NSRunningApplication(processIdentifier: window.pid) {
+                    app.activate(options: [])
+                }
 
                 var newPos = CGPoint(x: 100, y: 80)
                 let posValue: CFTypeRef = AXValueCreate(.cgPoint, &newPos)!
                 AXUIElementSetAttributeValue(axWindow, kAXPositionAttribute as CFString, posValue)
+
+                Thread.sleep(forTimeInterval: 0.1)
+
+                var newSize = CGSize(width: CGFloat(size.width), height: CGFloat(size.height))
+                let sizeValue: CFTypeRef = AXValueCreate(.cgSize, &newSize)!
+                AXUIElementSetAttributeValue(axWindow, kAXSizeAttribute as CFString, sizeValue)
 
                 break
             }
