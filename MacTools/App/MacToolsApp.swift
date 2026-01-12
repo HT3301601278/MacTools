@@ -6,9 +6,10 @@ struct MacToolsApp: App {
     private var appDelegate
 
     var body: some Scene {
-        Window("", id: "main") {
+        Window("MacTools", id: "main") {
             ContentView()
         }
         .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 }

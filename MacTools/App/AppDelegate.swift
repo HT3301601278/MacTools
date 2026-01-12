@@ -48,10 +48,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openMainWindow() {
-        if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
+        if let window = NSApp.windows.first(where: { 
+            $0.identifier?.rawValue.contains("main") == true || $0.title == "MacTools"
+        }) {
             window.makeKeyAndOrderFront(nil)
-        } else {
-            NSApp.sendAction(Selector(("showMainWindow:")), to: nil, from: nil)
         }
         NSApp.activate(ignoringOtherApps: true)
     }
