@@ -4,23 +4,46 @@ import ApplicationServices
 final class DockToggleManager: FeatureManager {
 
     static let shared = DockToggleManager()
-    private var eventMonitor: GlobalEventMonitor?
+    private var mouseDownMonitor: GlobalEventMonitor?
+    private var mouseUpMonitor: GlobalEventMonitor?
+    private var mouseDraggedMonitor: GlobalEventMonitor?
+    private var pendingClick: PendingDockClick?
+
+    private struct PendingDockClick {
+        let app: NSRunningApplication
+        let windowCountBefore: Int
+    }
 
     private init() {}
 
     func start() {
-        eventMonitor = GlobalEventMonitor(mask: .leftMouseDown) { [weak self] event in
-            self?.handleGlobalClick(event)
+        mouseDownMonitor = GlobalEventMonitor(mask: .leftMouseDown) { [weak self] _ in
+            self?.handleMouseDown()
         }
-        eventMonitor?.start()
+        mouseUpMonitor = GlobalEventMonitor(mask: .leftMouseUp) { [weak self] _ in
+            self?.handleMouseUp()
+        }
+        mouseDraggedMonitor = GlobalEventMonitor(mask: .leftMouseDragged) { [weak self] _ in
+            self?.pendingClick = nil
+        }
+        mouseDownMonitor?.start()
+        mouseUpMonitor?.start()
+        mouseDraggedMonitor?.start()
     }
 
     func stop() {
-        eventMonitor?.stop()
-        eventMonitor = nil
+        mouseDownMonitor?.stop()
+        mouseUpMonitor?.stop()
+        mouseDraggedMonitor?.stop()
+        mouseDownMonitor = nil
+        mouseUpMonitor = nil
+        mouseDraggedMonitor = nil
+        pendingClick = nil
     }
 
-    private func handleGlobalClick(_ event: NSEvent) {
+    private func handleMouseDown() {
+        pendingClick = nil
+
         guard UserDefaults.standard.bool(forKey: "dockToggleEnabled") else { return }
         guard AXIsProcessTrusted() else { return }
 
@@ -37,12 +60,25 @@ final class DockToggleManager: FeatureManager {
         let windowCountBefore = visibleWindowCount(app)
 
         if windowCountBefore > 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                let windowCountAfter = self.visibleWindowCount(app)
-                if NSWorkspace.shared.frontmostApplication == app,
-                   windowCountAfter <= windowCountBefore {
-                    self.minimizeFocusedWindow(of: app)
-                }
+            pendingClick = PendingDockClick(
+                app: app,
+                windowCountBefore: windowCountBefore
+            )
+        }
+    }
+
+    private func handleMouseUp() {
+        guard let pending = pendingClick else { return }
+        pendingClick = nil
+
+        let app = pending.app
+        let windowCountBefore = pending.windowCountBefore
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            let windowCountAfter = self.visibleWindowCount(app)
+            if NSWorkspace.shared.frontmostApplication == app,
+               windowCountAfter <= windowCountBefore {
+                self.minimizeFocusedWindow(of: app)
             }
         }
     }
