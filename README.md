@@ -44,7 +44,7 @@
 
 ## 🔧 系统要求
 
-- macOS 13.0 (Ventura) 或更高版本
+- macOS 15.6 或更高版本
 - 需要以下系统权限：
   - **辅助功能权限** - 用于监听全局事件和控制窗口
   - **屏幕录制权限** - 用于获取窗口缩略图
@@ -113,19 +113,19 @@ open MacTools.xcodeproj
 ```
 MacTools/
 ├── App/
-│   ├── MacToolsApp.swift      # 应用入口
-│   └── AppDelegate.swift      # 应用代理，菜单栏图标
+│   ├── MacToolsApp.swift
+│   └── AppDelegate.swift
 ├── Core/
-│   ├── FeatureManager.swift   # 功能管理协议
+│   ├── AccessibilityWindowReader.swift
 │   ├── GlobalEventMonitor.swift
 │   ├── KeyCodeUtils.swift
 │   ├── PanelCentering.swift
 │   └── ScreenCapture.swift
 ├── Features/
-│   ├── DockToggle/            # Dock 切换功能
+│   ├── DockToggle/
 │   │   ├── DockToggleManager.swift
 │   │   └── DockToggleView.swift
-│   └── WindowResizer/         # 窗口调整功能
+│   └── WindowResizer/
 │       ├── WindowResizerManager.swift
 │       ├── WindowResizerView.swift
 │       ├── WindowPickerPanel.swift

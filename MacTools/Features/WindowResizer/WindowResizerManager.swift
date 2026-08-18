@@ -1,11 +1,13 @@
+import ApplicationServices
 import AppKit
 import Carbon
 
-final class WindowResizerManager: FeatureManager {
+final class WindowResizerManager {
     static let shared = WindowResizerManager()
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    var isRecordingShortcut = false
 
     var keyCode: UInt16 {
         didSet { UserDefaults.standard.set(Int(keyCode), forKey: "windowResizerKeyCode") }
@@ -29,13 +31,20 @@ final class WindowResizerManager: FeatureManager {
         }
     }
 
-    func start() {
+    func refresh() {
+        guard UserDefaults.standard.bool(forKey: "windowResizerEnabled"), AXIsProcessTrusted() else {
+            stop()
+            return
+        }
+        start()
+    }
+
+    private func start() {
         guard eventTap == nil else { return }
-        guard UserDefaults.standard.bool(forKey: "windowResizerEnabled") else { return }
 
         let eventMask = (1 << CGEventType.keyDown.rawValue)
 
-        eventTap = CGEvent.tapCreate(
+        guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
@@ -44,12 +53,16 @@ final class WindowResizerManager: FeatureManager {
                 WindowResizerManager.shared.handleEvent(type: type, event: event)
             },
             userInfo: nil
-        )
+        ) else { return }
 
-        guard let tap = eventTap else { return }
+        guard let source = CFMachPortCreateRunLoopSource(nil, tap, 0) else {
+            CFMachPortInvalidate(tap)
+            return
+        }
 
-        runLoopSource = CFMachPortCreateRunLoopSource(nil, tap, 0)
-        CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
+        eventTap = tap
+        runLoopSource = source
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
     }
 
@@ -60,15 +73,25 @@ final class WindowResizerManager: FeatureManager {
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
         }
+        if let tap = eventTap {
+            CFMachPortInvalidate(tap)
+        }
         eventTap = nil
         runLoopSource = nil
     }
 
     private func handleEvent(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        guard type == .keyDown else { return Unmanaged.passRetained(event) }
-        guard !KeyCodeUtils.isRecordingShortcut else { return Unmanaged.passRetained(event) }
-        guard UserDefaults.standard.bool(forKey: "windowResizerEnabled") else {
-            return Unmanaged.passRetained(event)
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let eventTap {
+                CGEvent.tapEnable(tap: eventTap, enable: true)
+            }
+            return nil
+        }
+
+        guard type == .keyDown else { return Unmanaged.passUnretained(event) }
+        guard !isRecordingShortcut else { return Unmanaged.passUnretained(event) }
+        guard UserDefaults.standard.bool(forKey: "windowResizerEnabled"), AXIsProcessTrusted() else {
+            return Unmanaged.passUnretained(event)
         }
 
         let eventKeyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
@@ -85,7 +108,7 @@ final class WindowResizerManager: FeatureManager {
             return nil
         }
 
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     var shortcutDescription: String {

@@ -15,9 +15,15 @@ final class GlobalEventMonitor {
         stop()
     }
 
-    func start() {
-        guard monitor == nil else { return }
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: handler)
+    func start() -> Bool {
+        if monitor != nil {
+            return true
+        }
+        guard let monitor = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: handler) else {
+            return false
+        }
+        self.monitor = monitor
+        return true
     }
 
     func stop() {

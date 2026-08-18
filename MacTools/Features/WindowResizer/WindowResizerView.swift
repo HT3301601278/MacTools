@@ -1,5 +1,7 @@
-import SwiftUI
+import ApplicationServices
 import AppKit
+import Carbon
+import SwiftUI
 
 struct WindowResizerView: View {
     @AppStorage("windowResizerEnabled") private var windowResizerEnabled = true
@@ -15,12 +17,8 @@ struct WindowResizerView: View {
             Section {
                 Toggle("启用窗口调整功能", isOn: $windowResizerEnabled)
                     .disabled(!hasAccessibility)
-                    .onChange(of: windowResizerEnabled) { _, enabled in
-                        if enabled {
-                            WindowResizerManager.shared.start()
-                        } else {
-                            WindowResizerManager.shared.stop()
-                        }
+                    .onChange(of: windowResizerEnabled) { _, _ in
+                        WindowResizerManager.shared.refresh()
                     }
             } footer: {
                 Text("按下快捷键后会弹出窗口选择器，选择窗口后再选择目标尺寸")
@@ -34,7 +32,7 @@ struct WindowResizerView: View {
 
                     if isRecordingShortcut {
                         Text("按下新快捷键...")
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(
@@ -56,8 +54,8 @@ struct WindowResizerView: View {
                         SizeRowView(size: size) {
                             editingSize = size
                         } onDelete: {
-                            if let idx = PresetSizeStore.shared.sizes.firstIndex(where: { $0.id == size.id }) {
-                                PresetSizeStore.shared.delete(at: IndexSet(integer: idx))
+                            if let index = PresetSizeStore.shared.sizes.firstIndex(where: { $0.id == size.id }) {
+                                PresetSizeStore.shared.delete(at: IndexSet(integer: index))
                             }
                         }
                         .listRowSeparator(.hidden)
@@ -107,18 +105,22 @@ struct WindowResizerView: View {
             hasAccessibility = AXIsProcessTrusted()
             shortcutDisplay = WindowResizerManager.shared.shortcutDescription
         }
+        .onDisappear {
+            stopRecording()
+        }
     }
 
     private func startRecording() {
-        if let monitor = shortcutMonitor {
-            NSEvent.removeMonitor(monitor)
-            shortcutMonitor = nil
-        }
-
+        stopRecording()
         isRecordingShortcut = true
-        KeyCodeUtils.isRecordingShortcut = true
+        WindowResizerManager.shared.isRecordingShortcut = true
 
         shortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            if event.keyCode == UInt16(kVK_Escape) {
+                stopRecording()
+                return nil
+            }
+
             let modifiers = CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
             let hasModifier = event.modifierFlags.contains(.command) ||
                               event.modifierFlags.contains(.control) ||
@@ -127,30 +129,27 @@ struct WindowResizerView: View {
             if hasModifier {
                 WindowResizerManager.shared.keyCode = event.keyCode
                 WindowResizerManager.shared.modifiers = modifiers
-                WindowResizerManager.shared.restart()
 
                 shortcutDisplay = WindowResizerManager.shared.shortcutDescription
-                isRecordingShortcut = false
-                KeyCodeUtils.isRecordingShortcut = false
-                if let monitor = shortcutMonitor {
-                    NSEvent.removeMonitor(monitor)
-                    shortcutMonitor = nil
-                }
-                return nil
-            }
-
-            if event.keyCode == 53 {
-                isRecordingShortcut = false
-                KeyCodeUtils.isRecordingShortcut = false
-                if let monitor = shortcutMonitor {
-                    NSEvent.removeMonitor(monitor)
-                    shortcutMonitor = nil
-                }
+                stopRecording()
                 return nil
             }
 
             return event
         }
+
+        if shortcutMonitor == nil {
+            stopRecording()
+        }
+    }
+
+    private func stopRecording() {
+        if let monitor = shortcutMonitor {
+            NSEvent.removeMonitor(monitor)
+            shortcutMonitor = nil
+        }
+        isRecordingShortcut = false
+        WindowResizerManager.shared.isRecordingShortcut = false
     }
 }
 

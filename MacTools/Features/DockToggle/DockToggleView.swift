@@ -1,3 +1,4 @@
+import ApplicationServices
 import SwiftUI
 
 struct DockToggleView: View {
@@ -9,6 +10,9 @@ struct DockToggleView: View {
             Section {
                 Toggle("启用 Dock 切换功能", isOn: $dockToggleEnabled)
                     .disabled(!hasAccessibility)
+                    .onChange(of: dockToggleEnabled) { _, _ in
+                        DockToggleManager.shared.refresh()
+                    }
             } footer: {
                 Text("点击 Dock 图标时，如果该应用窗口已聚焦，则最小化窗口")
                     .foregroundStyle(.secondary)

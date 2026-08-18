@@ -1,11 +1,13 @@
-import SwiftUI
+import ApplicationServices
+import AppKit
+import CoreGraphics
 import ServiceManagement
-import ScreenCaptureKit
+import SwiftUI
 
 struct GeneralSettingsView: View {
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var hasAccessibility = AXIsProcessTrusted()
-    @State private var hasScreenCapture = false
+    @State private var hasScreenCapture = CGPreflightScreenCaptureAccess()
     @AppStorage("showInDock") private var showInDock = false
 
     var body: some View {
@@ -16,13 +18,13 @@ struct GeneralSettingsView: View {
                     Spacer()
                     if hasAccessibility {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundStyle(.green)
                     } else {
                         Button("去授权") {
                             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
                             _ = AXIsProcessTrustedWithOptions(options)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                                self.openPrivacySettings("Privacy_Accessibility")
                             }
                         }
                         .buttonStyle(.link)
@@ -34,16 +36,12 @@ struct GeneralSettingsView: View {
                     Spacer()
                     if hasScreenCapture {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundStyle(.green)
                     } else {
                         Button("去授权") {
-                            Task {
-                                do {
-                                    _ = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
-                                    hasScreenCapture = true
-                                } catch {
-                                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
-                                }
+                            hasScreenCapture = CGRequestScreenCaptureAccess()
+                            if !hasScreenCapture {
+                                openPrivacySettings("Privacy_ScreenCapture")
                             }
                         }
                         .buttonStyle(.link)
@@ -73,22 +71,17 @@ struct GeneralSettingsView: View {
         }
         .formStyle(.grouped)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            hasAccessibility = AXIsProcessTrusted()
-            checkScreenCapturePermission()
-        }
-        .onAppear {
-            checkScreenCapturePermission()
+            refreshPermissions()
         }
     }
 
-    private func checkScreenCapturePermission() {
-        Task {
-            do {
-                _ = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
-                hasScreenCapture = true
-            } catch {
-                hasScreenCapture = false
-            }
-        }
+    private func refreshPermissions() {
+        hasAccessibility = AXIsProcessTrusted()
+        hasScreenCapture = CGPreflightScreenCaptureAccess()
+    }
+
+    private func openPrivacySettings(_ pane: String) {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)") else { return }
+        NSWorkspace.shared.open(url)
     }
 }

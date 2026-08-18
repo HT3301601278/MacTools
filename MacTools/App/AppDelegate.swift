@@ -1,3 +1,4 @@
+import ApplicationServices
 import AppKit
 
 @MainActor
@@ -19,14 +20,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
         _ = AXIsProcessTrustedWithOptions(options)
 
-        DockToggleManager.shared.start()
-        WindowResizerManager.shared.start()
+        refreshManagers()
+    }
 
-        DispatchQueue.main.async {
-            if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
-                window.centerOnVisibleScreen()
-            }
-        }
+    func applicationDidBecomeActive(_ notification: Notification) {
+        refreshManagers()
     }
 
     private func setupStatusItem() {
@@ -48,11 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openMainWindow() {
-        if let window = NSApp.windows.first(where: { 
-            $0.identifier?.rawValue.contains("main") == true || $0.title == "MacTools"
-        }) {
-            window.makeKeyAndOrderFront(nil)
-        }
+        NSApp.windows.first { $0.title == "MacTools" }?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -66,6 +60,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    private func refreshManagers() {
+        DockToggleManager.shared.refresh()
+        WindowResizerManager.shared.refresh()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

@@ -2,8 +2,6 @@ import Carbon
 
 enum KeyCodeUtils {
 
-    static var isRecordingShortcut = false
-
     private static let keyMapping: [UInt16: String] = [
         UInt16(kVK_ANSI_A): "A", UInt16(kVK_ANSI_B): "B", UInt16(kVK_ANSI_C): "C",
         UInt16(kVK_ANSI_D): "D", UInt16(kVK_ANSI_E): "E", UInt16(kVK_ANSI_F): "F",
@@ -22,11 +20,11 @@ enum KeyCodeUtils {
         UInt16(kVK_Tab): "⇥", UInt16(kVK_Escape): "⎋",
     ]
 
-    static func toString(_ code: UInt16) -> String {
+    private static func toString(_ code: UInt16) -> String {
         keyMapping[code] ?? "?"
     }
 
-    static func modifiersDescription(_ flags: CGEventFlags) -> String {
+    private static func modifiersDescription(_ flags: CGEventFlags) -> String {
         var parts: [String] = []
         if flags.contains(.maskControl) { parts.append("⌃") }
         if flags.contains(.maskAlternate) { parts.append("⌥") }

@@ -3,13 +3,15 @@ import AppKit
 extension NSWindow {
     func centerOnVisibleScreen() {
         contentView?.layoutSubtreeIfNeeded()
-        guard let screen = self.screen ?? NSScreen.main ?? NSScreen.screens.first else {
+        guard let visibleFrame = NSScreen.main?.visibleFrame else {
             center()
             return
         }
-        let screenFrame = screen.frame
-        let panelSize = self.frame.size
-        let origin = NSPoint(x: screenFrame.midX - panelSize.width / 2, y: screenFrame.midY - panelSize.height / 2)
+        let panelSize = frame.size
+        let origin = NSPoint(
+            x: visibleFrame.midX - panelSize.width / 2,
+            y: visibleFrame.midY - panelSize.height / 2
+        )
         setFrameOrigin(origin)
     }
 }

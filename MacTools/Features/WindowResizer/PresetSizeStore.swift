@@ -1,5 +1,18 @@
 import SwiftUI
 
+struct WindowSize: Identifiable, Codable {
+    let id: UUID
+    let width: Int
+    let height: Int
+    var label: String { "\(width)×\(height)" }
+
+    init(id: UUID = UUID(), width: Int, height: Int) {
+        self.id = id
+        self.width = width
+        self.height = height
+    }
+}
+
 @Observable
 final class PresetSizeStore {
     static let shared = PresetSizeStore()
@@ -32,8 +45,8 @@ final class PresetSizeStore {
     }
 
     func update(id: UUID, width: Int, height: Int) {
-        if let idx = sizes.firstIndex(where: { $0.id == id }) {
-            sizes[idx] = WindowSize(id: id, width: width, height: height)
+        if let index = sizes.firstIndex(where: { $0.id == id }) {
+            sizes[index] = WindowSize(id: id, width: width, height: height)
         }
     }
 
